@@ -1,56 +1,15 @@
-from web_socket_server import WebSocketServer, socketio, app
-from flask import render_template
-import json
+from flask import Flask
+from flask_session import Session
+from flask_socketio import SocketIO
+from flask_cors import CORS
 
-my_app = WebSocketServer().create_app()
-message_storage = {}
-users = {}
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-@socketio.on('message')
-def handle_message(data):
-    try:
-        data = json.loads(data)
-        username = data['username']
-        message = data['message']
+app.config["SECRET_KEY"] = "JonJamLil24!"
+app.config["SESSION_TYPE"] = "filesystem"
 
-        if username not in message_storage:
-            message_storage[username] = []
-        message_storage[username].append(message)
-        print(f'received message from {username}: ' + message)
-        socketio.emit('message', {'user': username, 'message': message})
-    except json.JSONDecodeError as e:
-        print(f'Error decoding JSON: {e}')
-    except KeyError as e:
-        print(f'Missing key in data: {e}')
+Session(app)
 
-@socketio.on('get_user_messages')
-def handle_get_user_messages(data):
-    try:
-        data = json.loads(data)
-        username = data['username']
+socketIO = SocketIO(app, manage_session=False, cors_allowed_origins="*")
 
-        if username in message_storage:
-            user_messages = message_storage[username]
-        else:
-            user_messages = []
-        print(f'received get_user_messages request from {username}')
-        socketio.emit('get_user_messages', {'user': username, 'messages': user_messages})
-    except json.JSONDecodeError as e:
-        print(f'Error decoding JSON: {e}')
-    except KeyError as e:
-        print(f'Missing key in data: {e}')
-
-@socketio.on('connect')
-def handle_connect():
-    print('connected')
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('disconnected')
-
-@app.route('/')
-def index():
-    return render_template('WebSocketClient.html')
-
-if __name__ == '__main__':
-    socketio.run(my_app, allow_unsafe_werkzeug=True)

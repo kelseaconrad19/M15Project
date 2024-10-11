@@ -1,0 +1,30 @@
+{% extends "./base.html" %}
+{% block content %}
+<h2 style="text-align: center;">Welcome!</h2>
+
+<div class="sign-up-form">
+  <form action="{{ url_for('join') }}" method="POST">
+    <div class="user_name">
+      <label for="username">Username</label>
+      <input
+        type="text"
+        id="username"
+        name="username"
+        placeholder="Username"
+        required
+      />
+    </div>
+    <div class="room_name">
+      <label for="roomName">Room Name</label>
+      <input
+        type="text"
+        id="roomName"
+        name="roomName"
+        placeholder="Room Name"
+        required
+      />
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+</div>
+{% endblock content %}

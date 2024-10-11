@@ -1,0 +1,96 @@
+{% extends "./base.html" %}
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Socket.io
+    const socket = io("/join", { transports: ["websocket"] });
+
+
+    // Get elements
+    const form = document.getElementById('message_form');
+    const input = document.getElementById('chatInput');
+    const messageList = document.getElementById('messageList');
+
+    // Join the room when connected
+    socket.on("connect", () => {
+      socket.emit("join", {});
+    });
+
+    // Listen for form submission to send a message
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (message !== '') {
+        socket.emit('text', { msg: message });  // Emit the message event with the message content
+        input.value = '';
+      }
+    });
+
+    // Handle incoming status messages (e.g., user joins/leaves)
+    socket.on('status', (data) => {
+      if (messageList) {
+        const listItem = document.createElement('li');
+        listItem.textContent = data.msg;
+        listItem.classList.add('status-message');
+        messageList.appendChild(listItem);
+      }
+    });
+
+    // Handle incoming chat messages
+    socket.on("message", (data) => {
+      if (messageList) {
+        const listItem = document.createElement('li');
+        listItem.textContent = data.msg;
+        listItem.classList.add('chat-message');
+        messageList.appendChild(listItem);
+      }
+    });
+
+    // Handle disconnection
+    socket.on("disconnect", () => {
+      leaveRoom();
+    });
+
+    // Leave room function
+    const leaveRoom = () => {
+      socket.emit("left", {}, () => {
+        socket.disconnect();
+        window.location.href = "{{ url_for('index') }}";
+      });
+    };
+
+    // Leave room button
+    document.getElementById('leave-btn').addEventListener('click', leaveRoom);
+  });
+</script>
+
+<h2 style="text-align: center;">Room {{ session['room_name'] }}</h2>
+
+<!-- Chat Interface -->
+<div class="card">
+  <div class="card-body">
+    <ul id="messageList" style="list-style-type: none; padding: 0; max-height: 300px; overflow-y: auto;">
+      <!-- Messages will be appended here as list items -->
+    </ul>
+    <div class="mb-3">
+      <form id="message_form">
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="What's on your mind...?"
+          required
+        />
+        <button type="submit" id="submit-btn">Post</button>
+      </form>
+    </div>
+    <button
+      type="button"
+      class="btn btn-danger"
+      id="leave-btn"
+    >
+      Leave chat room
+    </button>
+  </div>
+</div>
+{% endblock content %}
